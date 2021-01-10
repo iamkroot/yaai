@@ -20,9 +20,7 @@
         "96": "res/download-96.png"
     },
     "background": {
-        "scripts": [
-            "background.js"
-        ]
+        "page": "background.html"
     },
     "browser_specific_settings": {
         "gecko": {
