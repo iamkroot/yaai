@@ -25,6 +25,7 @@
         "page": "options/options.html",
         "browser_style": true
     },
+    "web_accessible_resources": ["popup/dialog.html"],
     "browser_specific_settings": {
         "gecko": {
             "id": "yaai@iamkroot",
