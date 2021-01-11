@@ -1,4 +1,5 @@
 import { getFilenameFromContentDispositionHeader } from "./content-disposition.js";
+const sanitizeFilename = require("sanitize-filename");
 
 /**
  * Create a copy of the given object only containing the specified keys.
@@ -23,6 +24,20 @@ export const getHeaderVal = (headers, name) => {
     return header ? header.value || header.binaryValue || '' : '';
 }
 
+const DEFAULT_ARIA2_OPTIONS = {
+    host: "localhost",
+    protocol: "http",
+    port: 6800,
+    secure: false,
+    path: "/jsonrpc",
+    secret: ""
+}
+
+export const readAria2Options = async () => {
+    const result = await browser.storage.local.get({ aria2_options: DEFAULT_ARIA2_OPTIONS });
+    return result.aria2_options;
+}
+
 const getFilenameFromURL = (url) => {
     url = url.split(/[?#]/, 1)[0];
     var filename = url.match(/([^/]+)[/ ]*$/)[1];
@@ -30,29 +45,6 @@ const getFilenameFromURL = (url) => {
         filename = decodeURIComponent(filename);
     } catch (e) {/* URIError */ }
     return filename;
-}
-
-
-const illegalRe = /[\/\?<>\\:\*\|"]/g;
-const controlRe = /[\x00-\x1f\x80-\x9f]/g;
-const reservedRe = /^\.+$/;
-const windowsReservedRe = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
-const windowsTrailingRe = /[\. ]+$/;
-
-/**
- * Remove illegal chars from filename.
- * Taken from https://github.com/parshap/node-sanitize-filename/blob/209c39b914c8eb48ee27bcbde64b2c7822fdf3de/index.js
- * @param {String} filename Original filename
- * @param {char} replacement Replacement character
- */
-const sanitizeFilename = (filename, replacement = "_") => {
-    let sanitized = filename
-        .replace(illegalRe, replacement)
-        .replace(controlRe, replacement)
-        .replace(reservedRe, replacement)
-        .replace(windowsReservedRe, replacement)
-        .replace(windowsTrailingRe, replacement);
-    return sanitized;
 }
 
 export const getFilename = (details) => {

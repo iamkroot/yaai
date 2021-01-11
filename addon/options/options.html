@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YAAI Options</title>
+</head>
+
+<body>
+    <header class="panel-section panel-section-header">
+        <div class="text-section-header">Aria2 Options</div>
+    </header>
+    <form id="aria2-options" class="panel-section panel-section-formElements">
+        <div class="panel-formElements-item">
+            <label for="host">Host</label>
+            <input type="text" class="option aria2" name="host" id="host">
+        </div>
+        <div class="panel-formElements-item">
+            <label for="port">Port</label>
+            <input type="number" min="0" max="65535" class="option aria2" name="port" id="port">
+        </div>
+        <fieldset class="panel-formElements-item">
+            <legend>Protocol</legend>
+            <label for="protocol-ws">WS</label>
+            <input type="radio" class="option aria2" name="protocol" id="protocol-ws" value="ws">
+            <label for="protocol-http">HTTP</label>
+            <input type="radio" class="option aria2" name="protocol" id="protocol-http" value="http">
+        </fieldset>
+
+        <div class="panel-formElements-item">
+            <label for="secure">Secure</label>
+            <input type="checkbox" class="option aria2" name="secure" id="secure">
+        </div>
+        <div class="panel-formElements-item">
+            <label for="path">Path</label>
+            <input type="text" class="option aria2" name="path" id="path">
+        </div>
+        <div class="panel-formElements-item">
+            <label for="secret">RPC Secret Token</label>
+            <input type="password" class="option aria2" name="secret" id="secret">
+        </div>
+        <button class="browser-style" style="max-width: max-content;align-self: center;" type="submit">Save</button>
+    </form>
+    <script src="index.js"></script>
+</body>
+
+</html>

@@ -2,7 +2,8 @@ const path = require("path");
 
 module.exports = {
     entry: {
-        background: "./src/background.js"
+        background: "./src/background.js",
+        options: "./src/options.js",
     },
     output: {
         path: path.resolve(__dirname, "addon"),
@@ -10,5 +11,6 @@ module.exports = {
     },
     watchOptions: {
         ignored: ['addon/**', 'node_modules/**']
-    }
+    },
+    devtool: 'cheap-module-source-map'
 };
