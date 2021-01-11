@@ -9,7 +9,6 @@
         "notifications",
         "downloads",
         "downloads.open",
-        "contextMenus",
         "webRequest",
         "webRequestBlocking",
         "cookies",
@@ -20,7 +19,7 @@
         "96": "res/download-96.png"
     },
     "background": {
-        "page": "background.html"
+        "page": "background/background.html"
     },
     "browser_specific_settings": {
         "gecko": {

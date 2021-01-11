@@ -1,9 +1,10 @@
 import { copyObj, getFilename, getHeaderVal } from "./utils.js";
+import { Aria2 } from "aria2";
 
+const aria = new Aria2();
 let requests = {};
 
 const REQD_HEADERS = ["Referer", "Cookie", "Cookie2", "Authorization"]
-
 
 const startDownload = async (respDetails, reqDetails) => {
     let newReq = { ...reqDetails };

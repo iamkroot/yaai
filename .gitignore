@@ -1,0 +1,3 @@
+node_modules
+.vscode
+addon/background/index.js
