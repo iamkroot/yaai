@@ -1,17 +1,13 @@
 {
     "manifest_version": 2,
-    "name": "YAAI: Yet another Aria2 Integrator",
+    "name": "YAAI: Yet Another Aria2 Integrator",
     "version": "0.1.0",
     "description": "Use Aria2 for downloading content in Firefox",
     "permissions": [
         "storage",
         "tabs",
-        "notifications",
-        "downloads",
-        "downloads.open",
         "webRequest",
         "webRequestBlocking",
-        "cookies",
         "<all_urls>"
     ],
     "icons": {
