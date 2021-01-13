@@ -1,16 +1,16 @@
-<dialog id="yaai-dialog">
-    <form method="dialog">
+<dialog id="yaai-dialog" style="max-height: 40%;">
+    <form method="dialog" class="pure-form pure-form-stacked">
         <fieldset>
             <legend>Intercepted download</legend>
+            <label for="url">URL</label>
+            <input class="pure-input-1" type="text" name="yaai-url" id="yaai-url" readonly="">
             <label for="filename">Name</label>
-            <input type="text" name="filename" id="filename">
+            <input class="pure-input-1" type="text" name="yaai-filename" id="yaai-filename">
             <label for="dir">Location</label>
-            <input type="text" name="dir" id="dir">
+            <input class="pure-input-1" type="text" name="yaai-dir" id="yaai-dir">
         </fieldset>
-        <menu>
-            <button value="Aria2">Aria2</button>
-            <button value="Firefox">Firefox</button>
-            <button value="SaveAs">Firefox SaveAs</button>
-        </menu>
+        <button type="submit" value="aria2" class="pure-button pure-button-primary">Aria2</button>
+        <button type="submit" value="firefox" class="pure-button">Firefox</button>
+        <button type="submit" value="halt" class="pure-button">Don&apos;t Download</button>
     </form>
 </dialog>
