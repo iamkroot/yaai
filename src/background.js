@@ -4,6 +4,9 @@ const Aria2 = require("aria2");
 
 let requests = {};
 
+const ariaConnOptions = await readAria2Options();
+const aria2 = new Aria2(ariaConnOptions);
+const defaultParams = await aria2.call("getGlobalOption");
 const REQD_HEADERS = ["Referer", "Cookie", "Cookie2", "Authorization"]
 
 const addToAria = async (params) => {
@@ -16,11 +19,9 @@ const addToAria = async (params) => {
     if (params.filename) {
         args.out = params.filename;
     }
-    if (params.dir && params.dir != "<default>") {
+    if (params.dir && params.dir != defaultParams.dir) {
         args.dir = params.dir;
     }
-    let options = await readAria2Options();
-    const aria2 = new Aria2(options);
     await aria2.call("addUri", [url], args);
     return true;
 }
@@ -54,7 +55,7 @@ const startDownload = async (respDetails, reqDetails) => {
     const params = {
         url: respDetails.url,
         filename,
-        dir: "<default>",
+        dir: defaultParams.dir,
         headers: requestHeaders
     };
 

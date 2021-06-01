@@ -1,6 +1,9 @@
 const path = require("path");
 
 module.exports = {
+    experiments: {
+        topLevelAwait: true
+    },
     entry: {
         background: "./src/background.js",
         options: "./src/options.js",
