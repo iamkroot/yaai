@@ -11,7 +11,9 @@ module.exports = {
     },
     output: {
         path: path.resolve(__dirname, "addon"),
-        filename: "[name]/index.js"
+        filename: "[name]/index.js",
+        hashFunction: "xxhash64",
+        devtoolModuleFilenameTemplate: './[resource-path]'
     },
     watchOptions: {
         ignored: ['addon/**', 'node_modules/**']
