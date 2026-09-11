@@ -53,7 +53,7 @@ const showMessage = (msg, type = "info") => {
 };
 
 const renderProfileSelect = () => {
-    profileSelect.innerHTML = "";
+    profileSelect.replaceChildren();
     for (const profile of config.profiles) {
         const option = document.createElement("option");
         option.value = profile.id;
@@ -92,8 +92,14 @@ const populateForm = (profile) => {
     }
 
     if (recentDirsContainer && clearHistoryBtn) {
+        recentDirsContainer.replaceChildren();
         if (Array.isArray(profile.recentDirs) && profile.recentDirs.length > 0) {
-            recentDirsContainer.innerHTML = profile.recentDirs.map(d => `<div style="padding: 2px 0;">• ${d}</div>`).join("");
+            for (const d of profile.recentDirs) {
+                const item = document.createElement("div");
+                item.style.padding = "2px 0";
+                item.textContent = `• ${d}`;
+                recentDirsContainer.appendChild(item);
+            }
             clearHistoryBtn.disabled = false;
         } else {
             recentDirsContainer.textContent = "(None)";
@@ -259,7 +265,7 @@ const formatExpiry = (expiresAt) => {
 const renderRoutingRules = async () => {
     if (!rulesTable || !rulesList || !noRulesMsg) return;
     const rules = await readRoutingRules();
-    rulesList.innerHTML = "";
+    rulesList.replaceChildren();
 
     if (rules.length === 0) {
         rulesTable.style.display = "none";
@@ -274,33 +280,56 @@ const renderRoutingRules = async () => {
         const tr = document.createElement("tr");
         tr.style.borderBottom = "1px solid #eee";
 
-        const typeBadge = rule.isRegex
-            ? `<span style="background: #e8eaed; color: #3c4043; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; font-family: monospace;">Regex</span>`
-            : `<span style="background: #e8f0fe; color: #1a73e8; padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">Domain</span>`;
+        const patternTd = document.createElement("td");
+        patternTd.style.cssText = "padding: 8px 10px; font-family: monospace; word-break: break-all;";
+        patternTd.textContent = rule.pattern;
 
-        const actionBadge = rule.action === "aria2"
-            ? `<span style="background: #e1f5fe; color: #0277bd; font-weight: bold; padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">Aria2</span>`
-            : `<span style="background: #fff3e0; color: #e65100; font-weight: bold; padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">Firefox</span>`;
-
-        const expiryText = formatExpiry(rule.expiresAt);
-
-        tr.innerHTML = `
-            <td style="padding: 8px 10px; font-family: monospace; word-break: break-all;">${rule.pattern}</td>
-            <td style="padding: 8px 10px;">${typeBadge}</td>
-            <td style="padding: 8px 10px;">${actionBadge}</td>
-            <td style="padding: 8px 10px; color: #555;">${expiryText}</td>
-            <td style="padding: 8px 10px; text-align: right;">
-                <button type="button" class="browser-style delete-rule-btn" style="color: #c00; font-size: 0.85em; padding: 2px 8px;" data-id="${rule.id}">Delete</button>
-            </td>
-        `;
-
-        const delBtn = tr.querySelector(".delete-rule-btn");
-        if (delBtn) {
-            delBtn.addEventListener("click", async () => {
-                await removeRoutingRule(rule.id);
-                await renderRoutingRules();
-            });
+        const typeTd = document.createElement("td");
+        typeTd.style.padding = "8px 10px";
+        const typeBadge = document.createElement("span");
+        if (rule.isRegex) {
+            typeBadge.style.cssText = "background: #e8eaed; color: #3c4043; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; font-family: monospace;";
+            typeBadge.textContent = "Regex";
+        } else {
+            typeBadge.style.cssText = "background: #e8f0fe; color: #1a73e8; padding: 2px 6px; border-radius: 3px; font-size: 0.85em;";
+            typeBadge.textContent = "Domain";
         }
+        typeTd.appendChild(typeBadge);
+
+        const actionTd = document.createElement("td");
+        actionTd.style.padding = "8px 10px";
+        const actionBadge = document.createElement("span");
+        if (rule.action === "aria2") {
+            actionBadge.style.cssText = "background: #e1f5fe; color: #0277bd; font-weight: bold; padding: 2px 6px; border-radius: 3px; font-size: 0.85em;";
+            actionBadge.textContent = "Aria2";
+        } else {
+            actionBadge.style.cssText = "background: #fff3e0; color: #e65100; font-weight: bold; padding: 2px 6px; border-radius: 3px; font-size: 0.85em;";
+            actionBadge.textContent = "Firefox";
+        }
+        actionTd.appendChild(actionBadge);
+
+        const expiryTd = document.createElement("td");
+        expiryTd.style.cssText = "padding: 8px 10px; color: #555;";
+        expiryTd.textContent = formatExpiry(rule.expiresAt);
+
+        const btnTd = document.createElement("td");
+        btnTd.style.cssText = "padding: 8px 10px; text-align: right;";
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "browser-style delete-rule-btn";
+        delBtn.style.cssText = "color: #c00; font-size: 0.85em; padding: 2px 8px;";
+        delBtn.textContent = "Delete";
+        delBtn.addEventListener("click", async () => {
+            await removeRoutingRule(rule.id);
+            await renderRoutingRules();
+        });
+        btnTd.appendChild(delBtn);
+
+        tr.appendChild(patternTd);
+        tr.appendChild(typeTd);
+        tr.appendChild(actionTd);
+        tr.appendChild(expiryTd);
+        tr.appendChild(btnTd);
 
         rulesList.appendChild(tr);
     }

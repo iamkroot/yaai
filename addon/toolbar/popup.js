@@ -31,7 +31,7 @@ const updateProfileView = () => {
     const profileInfo = document.getElementById("profile-info");
     if (!profileSelect || !profileInfo) return;
 
-    profileSelect.innerHTML = "";
+    profileSelect.replaceChildren();
     for (const p of config.profiles) {
         const opt = document.createElement("option");
         opt.value = p.id;

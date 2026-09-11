@@ -4,45 +4,169 @@
     }
     window.__yaai_popup_initialized = true;
 
-    const DIALOG_HTML = `
-<dialog id="yaai-dialog" style="max-width: 95vw; max-height: 85vh; overflow-y: auto; z-index: 2147483647; margin: auto; position: fixed; box-sizing: border-box;">
-    <form method="dialog" class="pure-form pure-form-stacked">
-        <fieldset>
-            <legend>Intercepted download</legend>
-            <label for="yaai-url">URL</label>
-            <input class="pure-input-1" type="text" name="yaai-url" id="yaai-url" readonly="">
-            <label for="yaai-filename">Name</label>
-            <input class="pure-input-1" type="text" name="yaai-filename" id="yaai-filename">
-            <label for="yaai-profile">Server Profile</label>
-            <select class="pure-input-1" name="yaai-profile" id="yaai-profile"></select>
-            <label for="yaai-dir-select">Location</label>
-            <div id="yaai-dir-container" style="margin-bottom: 0.5em;">
-                <select class="pure-input-1" id="yaai-dir-select" name="yaai-dir-select"></select>
-                <div id="yaai-dir-input-wrapper" style="display: none; position: relative;">
-                    <input class="pure-input-1" type="text" name="yaai-dir" id="yaai-dir" placeholder="Enter download directory" style="padding-right: 28px; width: 100%; box-sizing: border-box;">
-                    <button type="button" id="yaai-dir-cancel-btn" title="Back to list" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 14px; line-height: 1; color: #888; padding: 4px;">✕</button>
-                </div>
-            </div>
-        </fieldset>
+    const createDialogElement = () => {
+        const dialog = document.createElement("dialog");
+        dialog.id = "yaai-dialog";
+        dialog.style.cssText = "max-width: 95vw; max-height: 85vh; overflow-y: auto; z-index: 2147483647; margin: auto; position: fixed; box-sizing: border-box;";
 
-        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center;">
-            <div style="position: relative; display: inline-flex;">
-                <button type="submit" value="aria2" class="pure-button pure-button-primary">Aria2</button>
-                <button type="button" id="yaai-aria2-menu-btn" class="pure-button pure-button-primary" style="padding: 0 8px; border-left: 1px solid rgba(255,255,255,0.4);" title="Remember Aria2 for this site">▾</button>
-                <div id="yaai-aria2-menu" style="display: none; position: absolute; bottom: 100%; left: 0; margin-bottom: 4px; background: #fff; color: #333; border: 1px solid #ccc; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border-radius: 4px; padding: 4px 0; z-index: 2147483647; min-width: 240px; font-size: 12px;"></div>
-            </div>
+        const form = document.createElement("form");
+        form.setAttribute("method", "dialog");
+        form.className = "pure-form pure-form-stacked";
 
-            <div style="position: relative; display: inline-flex;">
-                <button type="submit" value="firefox" class="pure-button">Firefox</button>
-                <button type="button" id="yaai-firefox-menu-btn" class="pure-button" style="padding: 0 8px; border-left: 1px solid rgba(0,0,0,0.15);" title="Remember Firefox for this site">▾</button>
-                <div id="yaai-firefox-menu" style="display: none; position: absolute; bottom: 100%; left: 0; margin-bottom: 4px; background: #fff; color: #333; border: 1px solid #ccc; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border-radius: 4px; padding: 4px 0; z-index: 2147483647; min-width: 240px; font-size: 12px;"></div>
-            </div>
+        const fieldset = document.createElement("fieldset");
+        const legend = document.createElement("legend");
+        legend.textContent = "Intercepted download";
+        fieldset.appendChild(legend);
 
-            <button type="submit" value="halt" class="pure-button">Don&apos;t Download</button>
-        </div>
-    </form>
-</dialog>
-`;
+        // URL
+        const urlLabel = document.createElement("label");
+        urlLabel.setAttribute("for", "yaai-url");
+        urlLabel.textContent = "URL";
+        const urlInput = document.createElement("input");
+        urlInput.className = "pure-input-1";
+        urlInput.type = "text";
+        urlInput.name = "yaai-url";
+        urlInput.id = "yaai-url";
+        urlInput.readOnly = true;
+        fieldset.appendChild(urlLabel);
+        fieldset.appendChild(urlInput);
+
+        // Name
+        const nameLabel = document.createElement("label");
+        nameLabel.setAttribute("for", "yaai-filename");
+        nameLabel.textContent = "Name";
+        const nameInput = document.createElement("input");
+        nameInput.className = "pure-input-1";
+        nameInput.type = "text";
+        nameInput.name = "yaai-filename";
+        nameInput.id = "yaai-filename";
+        fieldset.appendChild(nameLabel);
+        fieldset.appendChild(nameInput);
+
+        // Server Profile
+        const profileLabel = document.createElement("label");
+        profileLabel.setAttribute("for", "yaai-profile");
+        profileLabel.textContent = "Server Profile";
+        const profileSelect = document.createElement("select");
+        profileSelect.className = "pure-input-1";
+        profileSelect.name = "yaai-profile";
+        profileSelect.id = "yaai-profile";
+        fieldset.appendChild(profileLabel);
+        fieldset.appendChild(profileSelect);
+
+        // Location
+        const dirLabel = document.createElement("label");
+        dirLabel.setAttribute("for", "yaai-dir-select");
+        dirLabel.textContent = "Location";
+        const dirContainer = document.createElement("div");
+        dirContainer.id = "yaai-dir-container";
+        dirContainer.style.marginBottom = "0.5em";
+
+        const dirSelect = document.createElement("select");
+        dirSelect.className = "pure-input-1";
+        dirSelect.id = "yaai-dir-select";
+        dirSelect.name = "yaai-dir-select";
+        dirContainer.appendChild(dirSelect);
+
+        const dirInputWrapper = document.createElement("div");
+        dirInputWrapper.id = "yaai-dir-input-wrapper";
+        dirInputWrapper.style.cssText = "display: none; position: relative;";
+
+        const dirInput = document.createElement("input");
+        dirInput.className = "pure-input-1";
+        dirInput.type = "text";
+        dirInput.name = "yaai-dir";
+        dirInput.id = "yaai-dir";
+        dirInput.placeholder = "Enter download directory";
+        dirInput.style.cssText = "padding-right: 28px; width: 100%; box-sizing: border-box;";
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.id = "yaai-dir-cancel-btn";
+        cancelBtn.title = "Back to list";
+        cancelBtn.textContent = "✕";
+        cancelBtn.style.cssText = "position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 14px; line-height: 1; color: #888; padding: 4px;";
+
+        dirInputWrapper.appendChild(dirInput);
+        dirInputWrapper.appendChild(cancelBtn);
+        dirContainer.appendChild(dirInputWrapper);
+
+        fieldset.appendChild(dirLabel);
+        fieldset.appendChild(dirContainer);
+        form.appendChild(fieldset);
+
+        // Buttons row
+        const btnRow = document.createElement("div");
+        btnRow.style.cssText = "display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center;";
+
+        // Aria2 split button
+        const ariaGroup = document.createElement("div");
+        ariaGroup.style.cssText = "position: relative; display: inline-flex;";
+
+        const ariaBtn = document.createElement("button");
+        ariaBtn.type = "submit";
+        ariaBtn.value = "aria2";
+        ariaBtn.className = "pure-button pure-button-primary";
+        ariaBtn.textContent = "Aria2";
+
+        const ariaMenuBtn = document.createElement("button");
+        ariaMenuBtn.type = "button";
+        ariaMenuBtn.id = "yaai-aria2-menu-btn";
+        ariaMenuBtn.className = "pure-button pure-button-primary";
+        ariaMenuBtn.style.cssText = "padding: 0 8px; border-left: 1px solid rgba(255,255,255,0.4);";
+        ariaMenuBtn.title = "Remember Aria2 for this site";
+        ariaMenuBtn.textContent = "▾";
+
+        const ariaMenu = document.createElement("div");
+        ariaMenu.id = "yaai-aria2-menu";
+        ariaMenu.style.cssText = "display: none; position: absolute; bottom: 100%; left: 0; margin-bottom: 4px; background: #fff; color: #333; border: 1px solid #ccc; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border-radius: 4px; padding: 4px 0; z-index: 2147483647; min-width: 240px; font-size: 12px;";
+
+        ariaGroup.appendChild(ariaBtn);
+        ariaGroup.appendChild(ariaMenuBtn);
+        ariaGroup.appendChild(ariaMenu);
+
+        // Firefox split button
+        const ffGroup = document.createElement("div");
+        ffGroup.style.cssText = "position: relative; display: inline-flex;";
+
+        const ffBtn = document.createElement("button");
+        ffBtn.type = "submit";
+        ffBtn.value = "firefox";
+        ffBtn.className = "pure-button";
+        ffBtn.textContent = "Firefox";
+
+        const ffMenuBtn = document.createElement("button");
+        ffMenuBtn.type = "button";
+        ffMenuBtn.id = "yaai-firefox-menu-btn";
+        ffMenuBtn.className = "pure-button";
+        ffMenuBtn.style.cssText = "padding: 0 8px; border-left: 1px solid rgba(0,0,0,0.15);";
+        ffMenuBtn.title = "Remember Firefox for this site";
+        ffMenuBtn.textContent = "▾";
+
+        const ffMenu = document.createElement("div");
+        ffMenu.id = "yaai-firefox-menu";
+        ffMenu.style.cssText = "display: none; position: absolute; bottom: 100%; left: 0; margin-bottom: 4px; background: #fff; color: #333; border: 1px solid #ccc; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border-radius: 4px; padding: 4px 0; z-index: 2147483647; min-width: 240px; font-size: 12px;";
+
+        ffGroup.appendChild(ffBtn);
+        ffGroup.appendChild(ffMenuBtn);
+        ffGroup.appendChild(ffMenu);
+
+        // Don't download button
+        const haltBtn = document.createElement("button");
+        haltBtn.type = "submit";
+        haltBtn.value = "halt";
+        haltBtn.className = "pure-button";
+        haltBtn.textContent = "Don't Download";
+
+        btnRow.appendChild(ariaGroup);
+        btnRow.appendChild(ffGroup);
+        btnRow.appendChild(haltBtn);
+
+        form.appendChild(btnRow);
+        dialog.appendChild(form);
+
+        return dialog;
+    };
 
     let currentProfiles = [];
     let isCustomMode = false;
@@ -72,7 +196,7 @@
     const renderDirSelect = (profileId, selectedValue) => {
         const dirSelect = document.getElementById("yaai-dir-select");
         if (!dirSelect) return;
-        dirSelect.innerHTML = "";
+        dirSelect.replaceChildren();
 
         const profile = currentProfiles.find(p => p.id === profileId);
         const defaultDir = (profile && profile.dir) || "";
@@ -126,7 +250,7 @@
     const setupMenu = (action, domain) => {
         const menu = document.getElementById(`yaai-${action}-menu`);
         if (!menu) return;
-        menu.innerHTML = "";
+        menu.replaceChildren();
         const labelAction = action === "aria2" ? "Aria2" : "Firefox";
 
         const options = [
@@ -186,8 +310,8 @@
                 return dialog;
             }
         }
-        document.body.insertAdjacentHTML("beforeend", DIALOG_HTML);
-        dialog = document.getElementById("yaai-dialog");
+        dialog = createDialogElement();
+        document.body.appendChild(dialog);
 
         const dirEl = document.getElementById("yaai-dir");
         const dirSelect = document.getElementById("yaai-dir-select");
@@ -284,7 +408,7 @@
 
         const profileEl = document.getElementById("yaai-profile");
         if (profileEl) {
-            profileEl.innerHTML = "";
+            profileEl.replaceChildren();
             if (currentProfiles.length > 0) {
                 for (const profile of currentProfiles) {
                     const opt = document.createElement("option");
