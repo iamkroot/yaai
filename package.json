@@ -3,12 +3,12 @@
   "version": "0.1.1",
   "description": "Use Aria2 for downloading content in Firefox",
   "dependencies": {
-    "aria2": "^4.1.2",
-    "sanitize-filename": "^1.6.3"
+    "aria2": "^5.0.0",
+    "sanitize-filename": "^1.6.4"
   },
   "devDependencies": {
-    "webpack": "^5.107.2",
-    "webpack-cli": "^7.0.3"
+    "webpack": "^5.110.3",
+    "webpack-cli": "^7.2.3"
   },
   "scripts": {
     "build": "webpack --mode=development --watch",

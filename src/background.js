@@ -1,6 +1,6 @@
 import { getFilename, getHeaderVal } from "./utils.js";
 import { readAria2Options } from "./utils";
-const Aria2 = require("aria2");
+import Aria2 from "aria2";
 
 let requests = {};
 
