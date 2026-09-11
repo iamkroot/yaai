@@ -10,7 +10,13 @@ import {
     readAria2Options,
     addRecentDir,
     clearRecentDirs,
-    MAX_RECENT_DIRS
+    MAX_RECENT_DIRS,
+    readRoutingRules,
+    addRoutingRule,
+    removeRoutingRule,
+    clearSessionRoutingRules,
+    matchRoutingRule,
+    extractHostname
 } from "../addon/common/utils.js";
 
 // Mock browser.storage.local
@@ -255,3 +261,133 @@ describe("Profiles Data Model & Storage", () => {
         assert.deepEqual(config.profiles[0].recentDirs, []);
     });
 });
+
+describe("Routing Rules & Regex Matching", () => {
+    beforeEach(() => {
+        mockStorage = {};
+    });
+
+    it("extractHostname safely extracts lowercased hostnames", () => {
+        assert.equal(extractHostname("https://GitHub.com/foo/bar"), "github.com");
+        assert.equal(extractHostname("http://sub.domain.co.uk:8080/path?query=1"), "sub.domain.co.uk");
+        assert.equal(extractHostname("invalid-url"), "");
+        assert.equal(extractHostname(""), "");
+    });
+
+    it("addRoutingRule adds permanent, session, and time-based rules", async () => {
+        const r1 = await addRoutingRule({
+            pattern: "github.com",
+            action: "firefox",
+            duration: "permanent"
+        });
+        assert.equal(r1.pattern, "github.com");
+        assert.equal(r1.action, "firefox");
+        assert.equal(r1.expiresAt, null);
+
+        const r2 = await addRoutingRule({
+            pattern: "nexusmods.com",
+            action: "aria2",
+            duration: "15"
+        });
+        assert.equal(r2.pattern, "nexusmods.com");
+        assert.equal(typeof r2.expiresAt, "number");
+        assert.ok(r2.expiresAt > Date.now());
+
+        const r3 = await addRoutingRule({
+            pattern: "temp.site",
+            action: "firefox",
+            duration: "session"
+        });
+        assert.equal(r3.expiresAt, "session");
+
+        const rules = await readRoutingRules();
+        assert.equal(rules.length, 3);
+    });
+
+    it("addRoutingRule deduplicates by pattern and isRegex", async () => {
+        await addRoutingRule({ pattern: "github.com", action: "firefox" });
+        await addRoutingRule({ pattern: "github.com", action: "aria2" });
+
+        const rules = await readRoutingRules();
+        assert.equal(rules.length, 1);
+        assert.equal(rules[0].action, "aria2");
+    });
+
+    it("addRoutingRule rejects invalid regex", async () => {
+        await assert.rejects(
+            async () => {
+                await addRoutingRule({ pattern: "([invalid+", isRegex: true });
+            },
+            /Invalid regular expression/
+        );
+    });
+
+    it("matchRoutingRule matches domains and subdomains", () => {
+        const rules = [
+            { id: "1", pattern: "github.com", isRegex: false, action: "firefox" }
+        ];
+
+        assert.ok(matchRoutingRule(rules, "https://github.com/releases", "https://s3.amazonaws.com/file.zip"));
+        assert.ok(matchRoutingRule(rules, "https://sub.github.com/page", "https://sub.github.com/file.zip"));
+        assert.ok(matchRoutingRule(rules, "https://other.com", "https://github.com/file.zip"));
+        assert.equal(matchRoutingRule(rules, "https://notgithub.com", "https://example.com/file.zip"), null);
+    });
+
+    it("matchRoutingRule matches regex patterns against download and page URLs", () => {
+        const rules = [
+            { id: "1", pattern: "\\.(iso|tar\\.gz)$", isRegex: true, action: "aria2" },
+            { id: "2", pattern: "drive\\.google\\.com/uc\\?", isRegex: true, action: "firefox" }
+        ];
+
+        // Matches download URL ending in .iso
+        const m1 = matchRoutingRule(rules, "https://releases.ubuntu.com", "https://releases.ubuntu.com/ubuntu.iso");
+        assert.equal(m1.action, "aria2");
+
+        // Matches download URL with .tar.gz (case-insensitive)
+        const m2 = matchRoutingRule(rules, "https://example.com", "https://example.com/ARCHIVE.TAR.GZ?dl=1");
+        assert.equal(m2.action, "aria2");
+
+        // Matches page URL
+        const m3 = matchRoutingRule(rules, "https://drive.google.com/uc?id=123", "https://doc-04.googleusercontent.com/download");
+        assert.equal(m3.action, "firefox");
+
+        // Non-matching
+        assert.equal(matchRoutingRule(rules, "https://example.com", "https://example.com/image.png"), null);
+    });
+
+    it("matchRoutingRule ignores expired rules", () => {
+        const past = Date.now() - 1000;
+        const rules = [
+            { id: "1", pattern: "expired.com", isRegex: false, action: "aria2", expiresAt: past }
+        ];
+
+        assert.equal(matchRoutingRule(rules, "https://expired.com", "https://expired.com/dl"), null);
+    });
+
+    it("removeRoutingRule removes rules by id", async () => {
+        const r1 = await addRoutingRule({ pattern: "site1.com", action: "firefox" });
+        const r2 = await addRoutingRule({ pattern: "site2.com", action: "aria2" });
+
+        let rules = await readRoutingRules();
+        assert.equal(rules.length, 2);
+
+        await removeRoutingRule(r1.id);
+        rules = await readRoutingRules();
+        assert.equal(rules.length, 1);
+        assert.equal(rules[0].pattern, "site2.com");
+    });
+
+    it("clearSessionRoutingRules removes only session rules and keeps permanent ones", async () => {
+        await addRoutingRule({ pattern: "perm.com", duration: "permanent", action: "aria2" });
+        await addRoutingRule({ pattern: "session.com", duration: "session", action: "firefox" });
+
+        let rules = await readRoutingRules();
+        assert.equal(rules.length, 2);
+
+        await clearSessionRoutingRules();
+        rules = await readRoutingRules();
+        assert.equal(rules.length, 1);
+        assert.equal(rules[0].pattern, "perm.com");
+    });
+});
+

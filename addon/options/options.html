@@ -78,6 +78,59 @@
         </div>
         <div id="status-message" style="margin-top: 10px; font-weight: 500; min-height: 1.5em; text-align: center;"></div>
     </form>
+
+    <header class="panel-section panel-section-header">
+        <div class="text-section-header">Download Routing &amp; Exclusion Rules</div>
+    </header>
+
+    <div class="panel-section panel-section-formElements">
+        <div style="font-size: 0.9em; color: #666; margin-bottom: 12px;">
+            Automatically route downloads to Aria2 or Firefox (direct) based on domain or regex URL patterns.
+        </div>
+
+        <div style="overflow-x: auto; margin-bottom: 16px;">
+            <table id="rules-table" style="width: 100%; border-collapse: collapse; font-size: 0.9em; text-align: left;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #ddd; background: #f8f9fa;">
+                        <th style="padding: 8px 10px;">Pattern</th>
+                        <th style="padding: 8px 10px;">Type</th>
+                        <th style="padding: 8px 10px;">Action</th>
+                        <th style="padding: 8px 10px;">Duration / Expiry</th>
+                        <th style="padding: 8px 10px; text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="rules-list">
+                    <!-- Dynamic rules list -->
+                </tbody>
+            </table>
+            <div id="no-rules-message" style="display: none; padding: 16px; text-align: center; color: #888; font-style: italic;">
+                No routing rules configured. Use the form below or the download popup menu to add rules.
+            </div>
+        </div>
+
+        <fieldset style="border: 1px solid #ddd; border-radius: 4px; padding: 12px;">
+            <legend style="font-size: 0.95em; font-weight: bold; padding: 0 6px;">Add New Rule</legend>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px;">
+                <input type="text" id="new-rule-pattern" placeholder="Domain (e.g. github.com) or regex" style="flex: 2 1 200px; min-width: 160px;" class="browser-style">
+                <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer; white-space: nowrap; font-size: 0.9em;">
+                    <input type="checkbox" id="new-rule-regex"> Regex
+                </label>
+                <select id="new-rule-action" class="browser-style" style="flex: 1 1 110px;">
+                    <option value="aria2">Aria2</option>
+                    <option value="firefox">Firefox (Direct)</option>
+                </select>
+                <select id="new-rule-duration" class="browser-style" style="flex: 1 1 130px;">
+                    <option value="permanent">Permanent</option>
+                    <option value="15">15 Minutes</option>
+                    <option value="60">1 Hour</option>
+                    <option value="session">This Session</option>
+                </select>
+                <button type="button" id="add-rule-btn" class="browser-style default" style="white-space: nowrap;">Add Rule</button>
+            </div>
+            <div id="rule-status-message" style="font-size: 0.85em; min-height: 1.2em;"></div>
+        </fieldset>
+    </div>
+
     <script type="module" src="index.js"></script>
 </body>
 

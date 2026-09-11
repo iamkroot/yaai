@@ -5,7 +5,7 @@
     window.__yaai_popup_initialized = true;
 
     const DIALOG_HTML = `
-<dialog id="yaai-dialog" style="max-height: 40%; z-index: 2147483647; margin: auto; position: fixed;">
+<dialog id="yaai-dialog" style="max-height: 50%; z-index: 2147483647; margin: auto; position: fixed;">
     <form method="dialog" class="pure-form pure-form-stacked">
         <fieldset>
             <legend>Intercepted download</legend>
@@ -24,15 +24,30 @@
                 </div>
             </div>
         </fieldset>
-        <button type="submit" value="aria2" class="pure-button pure-button-primary">Aria2</button>
-        <button type="submit" value="firefox" class="pure-button">Firefox</button>
-        <button type="submit" value="halt" class="pure-button">Don&apos;t Download</button>
+
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center;">
+            <div style="position: relative; display: inline-flex;">
+                <button type="submit" value="aria2" class="pure-button pure-button-primary">Aria2</button>
+                <button type="button" id="yaai-aria2-menu-btn" class="pure-button pure-button-primary" style="padding: 0 8px; border-left: 1px solid rgba(255,255,255,0.4);" title="Remember Aria2 for this site">▾</button>
+                <div id="yaai-aria2-menu" style="display: none; position: absolute; bottom: 100%; left: 0; margin-bottom: 4px; background: #fff; color: #333; border: 1px solid #ccc; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border-radius: 4px; padding: 4px 0; z-index: 2147483647; min-width: 240px; font-size: 12px;"></div>
+            </div>
+
+            <div style="position: relative; display: inline-flex;">
+                <button type="submit" value="firefox" class="pure-button">Firefox</button>
+                <button type="button" id="yaai-firefox-menu-btn" class="pure-button" style="padding: 0 8px; border-left: 1px solid rgba(0,0,0,0.15);" title="Remember Firefox for this site">▾</button>
+                <div id="yaai-firefox-menu" style="display: none; position: absolute; bottom: 100%; left: 0; margin-bottom: 4px; background: #fff; color: #333; border: 1px solid #ccc; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border-radius: 4px; padding: 4px 0; z-index: 2147483647; min-width: 240px; font-size: 12px;"></div>
+            </div>
+
+            <button type="submit" value="halt" class="pure-button">Don&apos;t Download</button>
+        </div>
     </form>
 </dialog>
 `;
 
     let currentProfiles = [];
     let isCustomMode = false;
+    let selectedRule = null;
+    let currentPageDomain = "";
 
     const setCustomMode = (custom) => {
         isCustomMode = custom;
@@ -108,14 +123,63 @@
         }
     };
 
+    const setupMenu = (action, domain) => {
+        const menu = document.getElementById(`yaai-${action}-menu`);
+        if (!menu) return;
+        menu.innerHTML = "";
+        const labelAction = action === "aria2" ? "Aria2" : "Firefox";
+
+        const options = [
+            { label: domain ? `Always use ${labelAction} for ${domain}` : `Always use ${labelAction} for this site`, duration: "permanent" },
+            { label: `Use ${labelAction} for next 15 minutes`, duration: "15" },
+            { label: `Use ${labelAction} for this session`, duration: "session" }
+        ];
+
+        for (const opt of options) {
+            const item = document.createElement("div");
+            item.textContent = opt.label;
+            item.style.cssText = "padding: 6px 12px; cursor: pointer; white-space: nowrap;";
+            item.addEventListener("mouseenter", () => {
+                item.style.background = "#f0f4ff";
+                item.style.color = "#0060df";
+            });
+            item.addEventListener("mouseleave", () => {
+                item.style.background = "transparent";
+                item.style.color = "#333";
+            });
+            item.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                selectedRule = {
+                    pattern: domain || "",
+                    action,
+                    duration: opt.duration
+                };
+                menu.style.display = "none";
+                const dialog = document.getElementById("yaai-dialog");
+                if (dialog) {
+                    dialog.returnValue = action;
+                    dialog.close();
+                }
+            });
+            menu.appendChild(item);
+        }
+    };
+
+    const closeAllMenus = () => {
+        const ariaMenu = document.getElementById("yaai-aria2-menu");
+        const ffMenu = document.getElementById("yaai-firefox-menu");
+        if (ariaMenu) ariaMenu.style.display = "none";
+        if (ffMenu) ffMenu.style.display = "none";
+    };
+
     /**
      * Get or create the dialog box
      */
     const insertDialog = () => {
         let dialog = document.getElementById("yaai-dialog");
         if (dialog !== null) {
-            // Replace old dialog if DOM structure has changed
-            if (!document.getElementById("yaai-dir-input-wrapper")) {
+            if (!document.getElementById("yaai-aria2-menu-btn")) {
                 dialog.remove();
                 dialog = null;
             } else {
@@ -129,6 +193,37 @@
         const dirSelect = document.getElementById("yaai-dir-select");
         const cancelBtn = document.getElementById("yaai-dir-cancel-btn");
         const profileEl = document.getElementById("yaai-profile");
+
+        const ariaMenuBtn = document.getElementById("yaai-aria2-menu-btn");
+        const ariaMenu = document.getElementById("yaai-aria2-menu");
+        const ffMenuBtn = document.getElementById("yaai-firefox-menu-btn");
+        const ffMenu = document.getElementById("yaai-firefox-menu");
+
+        if (ariaMenuBtn && ariaMenu) {
+            ariaMenuBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const isShown = ariaMenu.style.display === "block";
+                closeAllMenus();
+                if (!isShown) ariaMenu.style.display = "block";
+            });
+        }
+
+        if (ffMenuBtn && ffMenu) {
+            ffMenuBtn.addEventListener("click", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const isShown = ffMenu.style.display === "block";
+                closeAllMenus();
+                if (!isShown) ffMenu.style.display = "block";
+            });
+        }
+
+        dialog.addEventListener("click", (e) => {
+            if (!e.target.closest("#yaai-aria2-menu-btn") && !e.target.closest("#yaai-firefox-menu-btn")) {
+                closeAllMenus();
+            }
+        });
 
         if (dirSelect && dirEl) {
             dirSelect.addEventListener("change", () => {
@@ -170,7 +265,10 @@
      */
     const populateDialog = (params, dialog) => {
         setCustomMode(false);
+        closeAllMenus();
+        selectedRule = null;
         currentProfiles = Array.isArray(params.profiles) ? params.profiles : [];
+        currentPageDomain = params.pageDomain || "";
 
         for (const param of ["url", "filename"]) {
             const el = document.getElementById("yaai-" + param);
@@ -204,6 +302,9 @@
         const targetProfileId = profileEl ? profileEl.value : params.selectedProfileId;
         renderDirSelect(targetProfileId, params.dir || "");
 
+        setupMenu("aria2", currentPageDomain);
+        setupMenu("firefox", currentPageDomain);
+
         dialog.returnValue = "";
         dialog.removeAttribute("open");
     };
@@ -216,6 +317,7 @@
      */
     const getUserInput = (dialog) => new Promise((resolve) => {
         dialog.addEventListener("close", () => {
+            closeAllMenus();
             let params = {};
             for (const param of ["url", "filename"]) {
                 const el = document.getElementById("yaai-" + param);
@@ -239,8 +341,9 @@
             }
 
             const val = dialog.returnValue || DEFAULT_METHOD;
+            const ruleToSave = selectedRule;
             populateDialog({}, dialog); // clear the dialog for future use.
-            resolve({ params, downloadMethod: val });
+            resolve({ params, downloadMethod: val, rule: ruleToSave });
         }, { once: true });
     });
 

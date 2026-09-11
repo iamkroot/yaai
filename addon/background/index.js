@@ -3,7 +3,12 @@ import {
     getHeaderVal,
     readProfilesConfig,
     getActiveProfile,
-    addRecentDir
+    addRecentDir,
+    extractHostname,
+    readRoutingRules,
+    addRoutingRule,
+    matchRoutingRule,
+    clearSessionRoutingRules
 } from "../common/utils.js";
 import { Aria2 } from "../common/aria2.js";
 
@@ -61,6 +66,7 @@ const initProfiles = async () => {
     }
 };
 
+await clearSessionRoutingRules().catch(() => {});
 await initProfiles();
 
 browser.storage.onChanged.addListener((changes, area) => {
@@ -125,6 +131,77 @@ const startDownload = async (respDetails, reqDetails) => {
 
     const filename = getFilename(respDetails);
 
+    // Check routing and exclusion rules before displaying dialog
+    let pageUrl = "";
+    try {
+        const tab = await browser.tabs.get(respDetails.tabId);
+        if (tab && tab.url) {
+            pageUrl = tab.url;
+        }
+    } catch (e) {
+        // Tab may not be accessible
+    }
+
+    const pageDomain = extractHostname(pageUrl) || extractHostname(respDetails.url);
+
+    try {
+        const rules = await readRoutingRules();
+        const matchedRule = matchRoutingRule(rules, pageUrl, respDetails.url);
+        if (matchedRule) {
+            if (matchedRule.action === "firefox") {
+                console.log("YAAI: Bypassing dialog due to Firefox routing rule:", matchedRule.pattern);
+                return false;
+            }
+            if (matchedRule.action === "aria2") {
+                console.log("YAAI: Auto-routing download to Aria2 due to rule:", matchedRule.pattern);
+                const activeProfile = getActiveProfile(currentConfig.profiles, currentConfig.activeProfileId);
+                const targetProfile = (matchedRule.profileId && currentConfig.profiles.find(p => p.id === matchedRule.profileId)) || activeProfile;
+                let targetDir = matchedRule.dir || targetProfile.dir || serverDefaultDirs.get(targetProfile.id) || "";
+                if (!targetDir) {
+                    targetDir = await fetchServerDefaultDir(targetProfile);
+                }
+
+                const autoParams = {
+                    url: respDetails.url,
+                    filename,
+                    dir: targetDir || "",
+                    headers: requestHeaders,
+                    profileId: targetProfile.id
+                };
+
+                try {
+                    await addToAria(autoParams);
+                    try {
+                        await browser.notifications.create({
+                            type: "basic",
+                            iconUrl: "/res/download-48.png",
+                            title: "YAAI: Download sent to Aria2",
+                            message: `${filename || respDetails.url} sent to ${targetProfile.name}`
+                        });
+                    } catch (notifyErr) {
+                        // Ignore notification errors
+                    }
+                    return true;
+                } catch (err) {
+                    console.error("YAAI: Auto-route to Aria2 failed, falling back to browser:", err);
+                    try {
+                        await browser.notifications.create({
+                            type: "basic",
+                            iconUrl: "/res/download-48.png",
+                            title: "YAAI: Failed to send to Aria2",
+                            message: err.message || "Could not connect to Aria2 server"
+                        });
+                    } catch (notifyErr) {
+                        // Ignore notification errors
+                    }
+                    return false;
+                }
+            }
+        }
+    } catch (e) {
+        console.warn("YAAI: Error checking routing rules:", e);
+    }
+
     const CSS_FILE = "/res/pure-min.css";
     const SCRIPT_FILE = "/popup/index.js";
 
@@ -166,7 +243,8 @@ const startDownload = async (respDetails, reqDetails) => {
         dir: activeDir || "",
         headers: requestHeaders,
         profiles: profileList,
-        selectedProfileId: activeProfile.id
+        selectedProfileId: activeProfile.id,
+        pageDomain
     };
 
     let userChoice;
@@ -192,6 +270,22 @@ const startDownload = async (respDetails, reqDetails) => {
 
     if (userChoice.params) {
         Object.assign(params, userChoice.params);
+    }
+
+    if (userChoice.rule) {
+        const rulePattern = userChoice.rule.pattern || pageDomain || extractHostname(respDetails.url);
+        if (rulePattern) {
+            await addRoutingRule({
+                pattern: rulePattern,
+                isRegex: false,
+                action: userChoice.rule.action || userChoice.downloadMethod,
+                duration: userChoice.rule.duration,
+                profileId: params.profileId,
+                dir: params.dir
+            }).catch(err => {
+                console.warn("YAAI: Failed to save routing rule:", err);
+            });
+        }
     }
 
     switch (userChoice.downloadMethod) {

@@ -3,7 +3,10 @@ import {
     saveProfilesConfig,
     generateProfileId,
     DEFAULT_PROFILE,
-    clearRecentDirs
+    clearRecentDirs,
+    readRoutingRules,
+    addRoutingRule,
+    removeRoutingRule
 } from "../common/utils.js";
 import { Aria2 } from "../common/aria2.js";
 
@@ -17,6 +20,16 @@ const testConnectionBtn = document.getElementById("test-connection-btn");
 const statusMessage = document.getElementById("status-message");
 const recentDirsContainer = document.getElementById("recent-dirs-container");
 const clearHistoryBtn = document.getElementById("clear-history-btn");
+
+const rulesTable = document.getElementById("rules-table");
+const rulesList = document.getElementById("rules-list");
+const noRulesMsg = document.getElementById("no-rules-message");
+const newRulePattern = document.getElementById("new-rule-pattern");
+const newRuleRegex = document.getElementById("new-rule-regex");
+const newRuleAction = document.getElementById("new-rule-action");
+const newRuleDuration = document.getElementById("new-rule-duration");
+const addRuleBtn = document.getElementById("add-rule-btn");
+const ruleStatusMsg = document.getElementById("rule-status-message");
 
 let config = { profiles: [], activeProfileId: "default" };
 let currentEditingProfileId = "default";
@@ -95,6 +108,7 @@ const loadOptions = async () => {
     renderProfileSelect();
     const current = config.profiles.find(p => p.id === currentEditingProfileId) || config.profiles[0];
     populateForm(current);
+    await renderRoutingRules();
 };
 
 const handleProfileChange = () => {
@@ -223,6 +237,123 @@ const handleTestConnection = async () => {
     }
 };
 
+const formatExpiry = (expiresAt) => {
+    if (expiresAt === "session") {
+        return "This session";
+    }
+    if (!expiresAt) {
+        return "Permanent";
+    }
+    const diffMs = expiresAt - Date.now();
+    if (diffMs <= 0) {
+        return "Expired";
+    }
+    const diffMins = Math.ceil(diffMs / 60000);
+    if (diffMins < 60) {
+        return `${diffMins}m remaining`;
+    }
+    const diffHours = Math.ceil(diffMs / 3600000);
+    return `${diffHours}h remaining`;
+};
+
+const renderRoutingRules = async () => {
+    if (!rulesTable || !rulesList || !noRulesMsg) return;
+    const rules = await readRoutingRules();
+    rulesList.innerHTML = "";
+
+    if (rules.length === 0) {
+        rulesTable.style.display = "none";
+        noRulesMsg.style.display = "block";
+        return;
+    }
+
+    rulesTable.style.display = "table";
+    noRulesMsg.style.display = "none";
+
+    for (const rule of rules) {
+        const tr = document.createElement("tr");
+        tr.style.borderBottom = "1px solid #eee";
+
+        const typeBadge = rule.isRegex
+            ? `<span style="background: #e8eaed; color: #3c4043; padding: 2px 6px; border-radius: 3px; font-size: 0.85em; font-family: monospace;">Regex</span>`
+            : `<span style="background: #e8f0fe; color: #1a73e8; padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">Domain</span>`;
+
+        const actionBadge = rule.action === "aria2"
+            ? `<span style="background: #e1f5fe; color: #0277bd; font-weight: bold; padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">Aria2</span>`
+            : `<span style="background: #fff3e0; color: #e65100; font-weight: bold; padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">Firefox</span>`;
+
+        const expiryText = formatExpiry(rule.expiresAt);
+
+        tr.innerHTML = `
+            <td style="padding: 8px 10px; font-family: monospace; word-break: break-all;">${rule.pattern}</td>
+            <td style="padding: 8px 10px;">${typeBadge}</td>
+            <td style="padding: 8px 10px;">${actionBadge}</td>
+            <td style="padding: 8px 10px; color: #555;">${expiryText}</td>
+            <td style="padding: 8px 10px; text-align: right;">
+                <button type="button" class="browser-style delete-rule-btn" style="color: #c00; font-size: 0.85em; padding: 2px 8px;" data-id="${rule.id}">Delete</button>
+            </td>
+        `;
+
+        const delBtn = tr.querySelector(".delete-rule-btn");
+        if (delBtn) {
+            delBtn.addEventListener("click", async () => {
+                await removeRoutingRule(rule.id);
+                await renderRoutingRules();
+            });
+        }
+
+        rulesList.appendChild(tr);
+    }
+};
+
+let ruleStatusTimer = null;
+const showRuleMessage = (msg, isError = false) => {
+    if (!ruleStatusMsg) return;
+    if (ruleStatusTimer) clearTimeout(ruleStatusTimer);
+    ruleStatusMsg.textContent = msg;
+    ruleStatusMsg.style.color = isError ? "#d9383a" : "#107c10";
+    ruleStatusTimer = setTimeout(() => {
+        ruleStatusMsg.textContent = "";
+    }, 4000);
+};
+
+const handleAddRule = async () => {
+    if (!newRulePattern) return;
+    const pattern = (newRulePattern.value || "").trim();
+    if (!pattern) {
+        showRuleMessage("Please enter a domain or URL pattern.", true);
+        newRulePattern.focus();
+        return;
+    }
+
+    const isRegex = newRuleRegex ? newRuleRegex.checked : false;
+    if (isRegex) {
+        try {
+            new RegExp(pattern);
+        } catch (e) {
+            showRuleMessage(`Invalid regular expression: ${e.message}`, true);
+            newRulePattern.focus();
+            return;
+        }
+    }
+
+    try {
+        await addRoutingRule({
+            pattern,
+            isRegex,
+            action: newRuleAction ? newRuleAction.value : "aria2",
+            duration: newRuleDuration ? newRuleDuration.value : "permanent",
+            profileId: config.activeProfileId
+        });
+        newRulePattern.value = "";
+        if (newRuleRegex) newRuleRegex.checked = false;
+        await renderRoutingRules();
+        showRuleMessage("Rule added successfully!", false);
+    } catch (e) {
+        showRuleMessage(e.message || "Failed to add rule.", true);
+    }
+};
+
 document.addEventListener("DOMContentLoaded", loadOptions);
 profileSelect.addEventListener("change", handleProfileChange);
 newProfileBtn.addEventListener("click", handleNewProfile);
@@ -231,3 +362,16 @@ deleteProfileBtn.addEventListener("click", handleDeleteProfile);
 form.addEventListener("submit", handleSaveProfile);
 testConnectionBtn.addEventListener("click", handleTestConnection);
 clearHistoryBtn.addEventListener("click", handleClearHistory);
+
+if (addRuleBtn) {
+    addRuleBtn.addEventListener("click", handleAddRule);
+}
+
+if (newRulePattern) {
+    newRulePattern.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            handleAddRule();
+        }
+    });
+}

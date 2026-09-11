@@ -170,3 +170,149 @@ export const getFilename = (details) => {
     }
     return sanitizeFilename(filename);
 };
+
+export function extractHostname(url) {
+    if (!url || typeof url !== "string") return "";
+    try {
+        return new URL(url).hostname.toLowerCase();
+    } catch {
+        return "";
+    }
+}
+
+export function generateRuleId() {
+    return "rule_" + Date.now().toString(36) + "_" + Math.random().toString(36).substring(2, 7);
+}
+
+export async function readRoutingRules() {
+    const data = await browser.storage.local.get({ routing_rules: [] });
+    const rules = Array.isArray(data.routing_rules) ? data.routing_rules : [];
+    const now = Date.now();
+
+    const activeRules = rules.filter(rule => {
+        if (typeof rule.expiresAt === "number" && now > rule.expiresAt) {
+            return false;
+        }
+        return true;
+    });
+
+    if (activeRules.length !== rules.length) {
+        await saveRoutingRules(activeRules);
+    }
+
+    return activeRules;
+}
+
+export async function saveRoutingRules(rules) {
+    await browser.storage.local.set({ routing_rules: rules });
+}
+
+export async function addRoutingRule({ pattern, isRegex = false, action = "firefox", duration = "permanent", profileId = "", dir = "" }) {
+    if (!pattern || typeof pattern !== "string") return null;
+    const trimmedPattern = pattern.trim();
+    if (!trimmedPattern) return null;
+
+    if (isRegex) {
+        try {
+            new RegExp(trimmedPattern);
+        } catch {
+            throw new Error(`Invalid regular expression: ${trimmedPattern}`);
+        }
+    }
+
+    const rules = await readRoutingRules();
+    const now = Date.now();
+    let expiresAt = null;
+
+    if (duration === "session") {
+        expiresAt = "session";
+    } else if (typeof duration === "number" && duration > 0) {
+        expiresAt = now + duration * 60 * 1000;
+    } else if (duration === "15") {
+        expiresAt = now + 15 * 60 * 1000;
+    } else if (duration === "60") {
+        expiresAt = now + 60 * 60 * 1000;
+    }
+
+    const newRule = {
+        id: generateRuleId(),
+        pattern: trimmedPattern,
+        isRegex: Boolean(isRegex),
+        action,
+        duration: String(duration),
+        expiresAt,
+        profileId,
+        dir,
+        createdAt: now
+    };
+
+    const updatedRules = [
+        newRule,
+        ...rules.filter(r => !(r.pattern.toLowerCase() === trimmedPattern.toLowerCase() && Boolean(r.isRegex) === Boolean(isRegex)))
+    ];
+
+    await saveRoutingRules(updatedRules);
+    return newRule;
+}
+
+export async function removeRoutingRule(ruleId) {
+    const rules = await readRoutingRules();
+    const filtered = rules.filter(r => r.id !== ruleId);
+    await saveRoutingRules(filtered);
+    return filtered;
+}
+
+export async function clearSessionRoutingRules() {
+    const data = await browser.storage.local.get({ routing_rules: [] });
+    const rules = Array.isArray(data.routing_rules) ? data.routing_rules : [];
+    const nonSession = rules.filter(r => r.expiresAt !== "session");
+    if (nonSession.length !== rules.length) {
+        await saveRoutingRules(nonSession);
+    }
+    return nonSession;
+}
+
+
+export function matchRoutingRule(rules, pageUrl, downloadUrl) {
+    if (!Array.isArray(rules) || rules.length === 0) return null;
+    const now = Date.now();
+    const pageHost = extractHostname(pageUrl);
+    const dlHost = extractHostname(downloadUrl);
+
+    for (const rule of rules) {
+        if (typeof rule.expiresAt === "number" && now > rule.expiresAt) {
+            continue;
+        }
+
+        if (rule.isRegex) {
+            try {
+                const reg = new RegExp(rule.pattern, "i");
+                const testUrl = (u) => {
+                    if (!u) return false;
+                    if (reg.test(u)) return true;
+                    const clean = u.split(/[?#]/, 1)[0];
+                    return clean !== u && reg.test(clean);
+                };
+
+                if (testUrl(downloadUrl) || testUrl(pageUrl)) {
+                    return rule;
+                }
+            } catch (e) {
+                console.warn("YAAI: Invalid regex in rule:", rule.pattern, e);
+            }
+            continue;
+        }
+
+        const pat = rule.pattern.toLowerCase();
+        const matches = (host) => {
+            if (!host) return false;
+            return host === pat || host.endsWith("." + pat);
+        };
+
+        if (matches(pageHost) || matches(dlHost)) {
+            return rule;
+        }
+    }
+    return null;
+}
+

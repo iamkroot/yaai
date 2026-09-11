@@ -1,4 +1,4 @@
-<dialog id="yaai-dialog" style="max-height: 40%;">
+<dialog id="yaai-dialog" style="max-height: 50%;">
     <form method="dialog" class="pure-form pure-form-stacked">
         <fieldset>
             <legend>Intercepted download</legend>
@@ -17,8 +17,21 @@
                 </div>
             </div>
         </fieldset>
-        <button type="submit" value="aria2" class="pure-button pure-button-primary">Aria2</button>
-        <button type="submit" value="firefox" class="pure-button">Firefox</button>
-        <button type="submit" value="halt" class="pure-button">Don&apos;t Download</button>
+
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; align-items: center;">
+            <div style="position: relative; display: inline-flex;">
+                <button type="submit" value="aria2" class="pure-button pure-button-primary">Aria2</button>
+                <button type="button" id="yaai-aria2-menu-btn" class="pure-button pure-button-primary" style="padding: 0 8px; border-left: 1px solid rgba(255,255,255,0.4);" title="Remember Aria2 for this site">▾</button>
+                <div id="yaai-aria2-menu" style="display: none; position: absolute; bottom: 100%; left: 0; margin-bottom: 4px; background: #fff; color: #333; border: 1px solid #ccc; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border-radius: 4px; padding: 4px 0; z-index: 2147483647; min-width: 240px; font-size: 12px;"></div>
+            </div>
+
+            <div style="position: relative; display: inline-flex;">
+                <button type="submit" value="firefox" class="pure-button">Firefox</button>
+                <button type="button" id="yaai-firefox-menu-btn" class="pure-button" style="padding: 0 8px; border-left: 1px solid rgba(0,0,0,0.15);" title="Remember Firefox for this site">▾</button>
+                <div id="yaai-firefox-menu" style="display: none; position: absolute; bottom: 100%; left: 0; margin-bottom: 4px; background: #fff; color: #333; border: 1px solid #ccc; box-shadow: 0 4px 12px rgba(0,0,0,0.2); border-radius: 4px; padding: 4px 0; z-index: 2147483647; min-width: 240px; font-size: 12px;"></div>
+            </div>
+
+            <button type="submit" value="halt" class="pure-button">Don&apos;t Download</button>
+        </div>
     </form>
 </dialog>
