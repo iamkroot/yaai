@@ -49,18 +49,69 @@ export const getHeaderVal = (headers, name) => {
     return header ? header.value || header.binaryValue || '' : '';
 };
 
-export const DEFAULT_ARIA2_OPTIONS = {
+export const DEFAULT_PROFILE = {
+    id: "default",
+    name: "Default",
     host: "localhost",
     protocol: "http",
     port: 6800,
     secure: false,
     path: "/jsonrpc",
-    secret: ""
+    secret: "",
+    dir: ""
 };
 
+export const DEFAULT_CONFIG = {
+    profiles: [DEFAULT_PROFILE],
+    activeProfileId: "default"
+};
+
+export function generateProfileId() {
+    return "profile_" + Date.now().toString(36) + "_" + Math.random().toString(36).substring(2, 7);
+}
+
+export async function readProfilesConfig() {
+    const data = await browser.storage.local.get(["profiles", "active_profile_id", "aria2_options"]);
+
+    if (Array.isArray(data.profiles) && data.profiles.length > 0) {
+        const activeProfileId = data.profiles.some(p => p.id === data.active_profile_id)
+            ? data.active_profile_id
+            : data.profiles[0].id;
+        return { profiles: data.profiles, activeProfileId };
+    }
+
+    if (data.aria2_options) {
+        const migratedProfile = {
+            ...DEFAULT_PROFILE,
+            ...data.aria2_options,
+            id: "default",
+            name: "Default"
+        };
+        const config = { profiles: [migratedProfile], activeProfileId: "default" };
+        await saveProfilesConfig(config);
+        return config;
+    }
+
+    return { profiles: [{ ...DEFAULT_PROFILE }], activeProfileId: "default" };
+}
+
+export async function saveProfilesConfig(config) {
+    await browser.storage.local.set({
+        profiles: config.profiles,
+        active_profile_id: config.activeProfileId
+    });
+}
+
+export function getActiveProfile(profiles, activeProfileId) {
+    if (!profiles || profiles.length === 0) return { ...DEFAULT_PROFILE };
+    return profiles.find(p => p.id === activeProfileId) || profiles[0];
+}
+
+export const DEFAULT_ARIA2_OPTIONS = DEFAULT_PROFILE;
+
 export const readAria2Options = async () => {
-    const result = await browser.storage.local.get({ aria2_options: DEFAULT_ARIA2_OPTIONS });
-    return result.aria2_options;
+    const config = await readProfilesConfig();
+    return getActiveProfile(config.profiles, config.activeProfileId);
 };
 
 const getFilenameFromURL = (url) => {

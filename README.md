@@ -10,7 +10,7 @@ Here are the steps to manually install YAAI:
 2. Open `about:config` and toggle `xpinstall.signatures.required` to `false` and `dom.dialog_element.enabled` to `true`.
 3. Run `npm run pack` (or zip the contents inside [`addon`](addon) directory directly).
 4. Open `about:addons` and drag-and-drop the zip to this page (or in `about:debugging`, click "Load Temporary Add-on" and select `addon/manifest.json`).
-5. After installation, open the extension preferences and add your [`RPC Token`](https://aria2.github.io/manual/en/html/aria2c.html#rpc-authorization-secret-token) for Aria2 there.
+5. After installation, open the extension preferences to configure your Aria2 server profiles (host, port, token, protocol, and default download directory). You can create multiple profiles (e.g. Local, NAS, Seedbox) and choose which server to send downloads to on each intercepted download.
 
 ## Acknowledgements
 YAAI is mostly a rewrite of the download interception logic from [Aria2-Integration](https://github.com/RossWang/Aria2-Integration/) in ES7. I've found it to be the best in terms of actually intercepting valid downloads and forwarding them to Aria2.

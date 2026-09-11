@@ -1,37 +1,84 @@
-import { getFilename, getHeaderVal, readAria2Options } from "../common/utils.js";
+import {
+    getFilename,
+    getHeaderVal,
+    readProfilesConfig,
+    getActiveProfile
+} from "../common/utils.js";
 import { Aria2 } from "../common/aria2.js";
 
 let requests = {};
-let aria2 = null;
-let defaultParams = { dir: "" };
+let currentConfig = { profiles: [], activeProfileId: "default" };
+const ariaClients = new Map();
+const serverDefaultDirs = new Map();
 
-const initAria2 = async () => {
-    if (aria2) {
-        aria2.close();
+const getAriaClient = (profile) => {
+    if (!profile) return null;
+    let client = ariaClients.get(profile.id);
+    if (!client) {
+        client = new Aria2(profile);
+        ariaClients.set(profile.id, client);
     }
-    const ariaConnOptions = await readAria2Options();
-    aria2 = new Aria2(ariaConnOptions);
+    return client;
+};
+
+const fetchServerDefaultDir = async (profile) => {
+    if (!profile) return "";
+    if (profile.dir) {
+        return profile.dir;
+    }
+    if (serverDefaultDirs.has(profile.id)) {
+        return serverDefaultDirs.get(profile.id);
+    }
     try {
-        defaultParams = await aria2.call("getGlobalOption");
+        const client = getAriaClient(profile);
+        const options = await client.call("getGlobalOption");
+        if (options && options.dir) {
+            serverDefaultDirs.set(profile.id, options.dir);
+            return options.dir;
+        }
     } catch (error) {
-        console.warn("YAAI: Could not fetch global options from Aria2 on startup:", error);
+        console.warn(`YAAI: Could not fetch global options for profile "${profile.name}":`, error);
+    }
+    return "";
+};
+
+const initProfiles = async () => {
+    for (const client of ariaClients.values()) {
+        try {
+            client.close();
+        } catch (e) {
+            // Ignore close errors
+        }
+    }
+    ariaClients.clear();
+    serverDefaultDirs.clear();
+
+    currentConfig = await readProfilesConfig();
+
+    for (const profile of currentConfig.profiles) {
+        fetchServerDefaultDir(profile).catch(() => {});
     }
 };
 
-await initAria2();
+await initProfiles();
 
 browser.storage.onChanged.addListener((changes, area) => {
-    if (area === "local" && changes.aria2_options) {
-        initAria2();
+    if (area === "local" && (changes.profiles || changes.active_profile_id || changes.aria2_options)) {
+        initProfiles();
     }
 });
 
 const REQD_HEADERS = ["Referer", "Cookie", "Cookie2", "Authorization"];
 
 const addToAria = async (params) => {
-    if (!aria2) {
-        await initAria2();
+    const activeProfile = getActiveProfile(currentConfig.profiles, currentConfig.activeProfileId);
+    const targetProfile = (params.profileId && currentConfig.profiles.find(p => p.id === params.profileId)) || activeProfile;
+
+    const client = getAriaClient(targetProfile);
+    if (!client) {
+        throw new Error("No Aria2 client available");
     }
+
     const url = params.url;
     let args = {};
     if (params.headers && Array.isArray(params.headers)) {
@@ -40,10 +87,13 @@ const addToAria = async (params) => {
     if (params.filename) {
         args.out = params.filename;
     }
-    if (params.dir && params.dir != defaultParams.dir) {
+
+    const targetDefaultDir = targetProfile.dir || serverDefaultDirs.get(targetProfile.id) || "";
+    if (params.dir && params.dir !== targetDefaultDir) {
         args.dir = params.dir;
     }
-    await aria2.call("addUri", [url], args);
+
+    await client.call("addUri", [url], args);
     return true;
 };
 
@@ -84,11 +134,25 @@ const startDownload = async (respDetails, reqDetails) => {
         return false;
     }
 
+    const activeProfile = getActiveProfile(currentConfig.profiles, currentConfig.activeProfileId);
+    let activeDir = activeProfile.dir || serverDefaultDirs.get(activeProfile.id);
+    if (!activeDir) {
+        activeDir = await fetchServerDefaultDir(activeProfile);
+    }
+
+    const profileList = currentConfig.profiles.map(p => ({
+        id: p.id,
+        name: p.name,
+        dir: p.dir || serverDefaultDirs.get(p.id) || ""
+    }));
+
     const params = {
         url: respDetails.url,
         filename,
-        dir: defaultParams.dir || "",
-        headers: requestHeaders
+        dir: activeDir || "",
+        headers: requestHeaders,
+        profiles: profileList,
+        selectedProfileId: activeProfile.id
     };
 
     let userChoice;
@@ -122,6 +186,16 @@ const startDownload = async (respDetails, reqDetails) => {
                 return await addToAria(params);
             } catch (error) {
                 console.error("YAAI: Error sending to Aria2:", error);
+                try {
+                    await browser.notifications.create({
+                        type: "basic",
+                        iconUrl: "/res/download-48.png",
+                        title: "YAAI: Failed to send to Aria2",
+                        message: error.message || "Could not connect to Aria2 server"
+                    });
+                } catch (notifyErr) {
+                    // Ignore notification errors
+                }
                 return false;
             }
         case "firefox":

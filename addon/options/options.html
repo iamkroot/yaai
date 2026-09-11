@@ -9,16 +9,36 @@
 
 <body>
     <header class="panel-section panel-section-header">
-        <div class="text-section-header">Aria2 Options</div>
+        <div class="text-section-header">Aria2 Profiles</div>
     </header>
+
+    <div class="panel-section panel-section-formElements">
+        <div class="panel-formElements-item" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <label for="profile-select" style="min-width: 60px;">Profile</label>
+            <select id="profile-select" class="browser-style" style="flex: 1 1 180px; min-width: 140px;"></select>
+            <button type="button" id="new-profile-btn" class="browser-style">New</button>
+            <button type="button" id="make-default-btn" class="browser-style">Set as Default</button>
+            <button type="button" id="delete-profile-btn" class="browser-style" style="color: #c00;">Delete</button>
+        </div>
+        <div id="profile-badge" style="font-size: 0.85em; color: #0060df; font-weight: 500; margin-left: 70px; min-height: 1.2em;"></div>
+    </div>
+
+    <header class="panel-section panel-section-header">
+        <div class="text-section-header">Server Settings</div>
+    </header>
+
     <form id="aria2-options" class="panel-section panel-section-formElements">
         <div class="panel-formElements-item">
+            <label for="name">Profile Name</label>
+            <input type="text" class="option aria2" name="name" id="name" required>
+        </div>
+        <div class="panel-formElements-item">
             <label for="host">Host</label>
-            <input type="text" class="option aria2" name="host" id="host">
+            <input type="text" class="option aria2" name="host" id="host" required>
         </div>
         <div class="panel-formElements-item">
             <label for="port">Port</label>
-            <input type="number" min="0" max="65535" class="option aria2" name="port" id="port">
+            <input type="number" min="0" max="65535" class="option aria2" name="port" id="port" required>
         </div>
         <fieldset class="panel-formElements-item">
             <legend>Protocol</legend>
@@ -40,7 +60,16 @@
             <label for="secret">RPC Secret Token</label>
             <input type="password" class="option aria2" name="secret" id="secret">
         </div>
-        <button class="browser-style" style="max-width: max-content;align-self: center;" type="submit">Save</button>
+        <div class="panel-formElements-item">
+            <label for="dir">Default Directory</label>
+            <input type="text" class="option aria2" name="dir" id="dir" placeholder="Server default (leave blank for Aria2 global dir)">
+        </div>
+
+        <div class="panel-formElements-item" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px;">
+            <button type="button" id="test-connection-btn" class="browser-style">Test Connection</button>
+            <button type="submit" id="save-btn" class="browser-style default">Save Profile</button>
+        </div>
+        <div id="status-message" style="margin-top: 10px; font-weight: 500; min-height: 1.5em; text-align: center;"></div>
     </form>
     <script type="module" src="index.js"></script>
 </body>

@@ -4,6 +4,7 @@
   "description": "Use Aria2 for downloading content in Firefox",
   "type": "module",
   "scripts": {
+    "test": "node --test",
     "pack": "cd addon && zip -FSr ../addon.zip . -x '*.xpi' -x '*.zip'"
   },
   "author": "iamkroot",

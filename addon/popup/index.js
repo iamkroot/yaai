@@ -7,6 +7,8 @@ const DIALOG_HTML = `
             <input class="pure-input-1" type="text" name="yaai-url" id="yaai-url" readonly="">
             <label for="yaai-filename">Name</label>
             <input class="pure-input-1" type="text" name="yaai-filename" id="yaai-filename">
+            <label for="yaai-profile">Server Profile</label>
+            <select class="pure-input-1" name="yaai-profile" id="yaai-profile"></select>
             <label for="yaai-dir">Location</label>
             <input class="pure-input-1" type="text" name="yaai-dir" id="yaai-dir">
         </fieldset>
@@ -17,6 +19,8 @@ const DIALOG_HTML = `
 </dialog>
 `;
 
+let userModifiedDir = false;
+
 /**
  * Get or create the dialog box
  */
@@ -26,7 +30,29 @@ const insertDialog = () => {
         return dialog;
     }
     document.body.insertAdjacentHTML("beforeend", DIALOG_HTML);
-    return document.getElementById("yaai-dialog");
+    dialog = document.getElementById("yaai-dialog");
+
+    const dirEl = document.getElementById("yaai-dir");
+    const profileEl = document.getElementById("yaai-profile");
+
+    if (dirEl) {
+        dirEl.addEventListener("input", () => {
+            userModifiedDir = true;
+        });
+    }
+
+    if (profileEl && dirEl) {
+        profileEl.addEventListener("change", () => {
+            if (!userModifiedDir) {
+                const selectedOption = profileEl.options[profileEl.selectedIndex];
+                if (selectedOption && selectedOption.dataset.dir !== undefined) {
+                    dirEl.value = selectedOption.dataset.dir;
+                }
+            }
+        });
+    }
+
+    return dialog;
 };
 
 /**
@@ -35,12 +61,32 @@ const insertDialog = () => {
  * @param {HTMLDialogElement} dialog 
  */
 const populateDialog = (params, dialog) => {
+    userModifiedDir = false;
+
     for (const param of ["url", "filename", "dir"]) {
         const el = document.getElementById("yaai-" + param);
         if (el) {
             el.value = params[param] || "";
         }
     }
+
+    const profileEl = document.getElementById("yaai-profile");
+    if (profileEl) {
+        profileEl.innerHTML = "";
+        if (Array.isArray(params.profiles) && params.profiles.length > 0) {
+            for (const profile of params.profiles) {
+                const opt = document.createElement("option");
+                opt.value = profile.id;
+                opt.textContent = profile.name;
+                opt.dataset.dir = profile.dir || "";
+                profileEl.appendChild(opt);
+            }
+            if (params.selectedProfileId) {
+                profileEl.value = params.selectedProfileId;
+            }
+        }
+    }
+
     dialog.returnValue = "";
     dialog.removeAttribute("open");
 };
@@ -58,6 +104,9 @@ const getUserInput = (dialog) => new Promise((resolve) => {
             const el = document.getElementById("yaai-" + param);
             params[param] = el ? el.value : "";
         }
+        const profileEl = document.getElementById("yaai-profile");
+        params.profileId = profileEl ? profileEl.value : "";
+
         const val = dialog.returnValue || DEFAULT_METHOD;
         populateDialog({}, dialog); // clear the dialog for future use.
         resolve({ params, downloadMethod: val });

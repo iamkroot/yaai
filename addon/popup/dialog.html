@@ -2,11 +2,13 @@
     <form method="dialog" class="pure-form pure-form-stacked">
         <fieldset>
             <legend>Intercepted download</legend>
-            <label for="url">URL</label>
+            <label for="yaai-url">URL</label>
             <input class="pure-input-1" type="text" name="yaai-url" id="yaai-url" readonly="">
-            <label for="filename">Name</label>
+            <label for="yaai-filename">Name</label>
             <input class="pure-input-1" type="text" name="yaai-filename" id="yaai-filename">
-            <label for="dir">Location</label>
+            <label for="yaai-profile">Server Profile</label>
+            <select class="pure-input-1" name="yaai-profile" id="yaai-profile"></select>
+            <label for="yaai-dir">Location</label>
             <input class="pure-input-1" type="text" name="yaai-dir" id="yaai-dir">
         </fieldset>
         <button type="submit" value="aria2" class="pure-button pure-button-primary">Aria2</button>
