@@ -25,6 +25,14 @@
         "page": "options/options.html",
         "browser_style": true
     },
+    "browser_action": {
+        "default_icon": {
+            "48": "res/download-48.png",
+            "96": "res/download-96.png"
+        },
+        "default_title": "YAAI",
+        "default_popup": "toolbar/popup.html"
+    },
     "web_accessible_resources": ["popup/dialog.html"],
     "browser_specific_settings": {
         "gecko": {

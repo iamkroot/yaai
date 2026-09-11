@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YAAI</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="popup-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <img src="/res/download-48.png" alt="YAAI Logo" class="logo">
+                <span class="title">YAAI</span>
+                <span id="conn-badge" class="badge badge-loading">Connecting...</span>
+            </div>
+            <button id="open-options-btn" class="icon-btn" title="Open Settings">⚙</button>
+        </header>
+
+        <!-- Profile Selector -->
+        <section class="section">
+            <div class="section-label">Aria2 Server Profile</div>
+            <select id="profile-select" class="form-control"></select>
+            <div id="profile-info" class="sub-info"></div>
+        </section>
+
+        <!-- Current Site Routing -->
+        <section class="section">
+            <div class="section-header-row">
+                <span class="section-label">Site Rule</span>
+                <span id="site-domain" class="domain-chip">...</span>
+            </div>
+
+            <!-- Shown when on special browser page (e.g. about:blank) -->
+            <div id="no-site-view" class="card card-muted" style="display: none;">
+                Not available on this page
+            </div>
+
+            <!-- Shown when a rule is already active for this site -->
+            <div id="active-rule-view" class="card" style="display: none;">
+                <div class="rule-active-header">
+                    <span id="active-action-badge" class="badge"></span>
+                    <span id="active-expiry-text" class="sub-info"></span>
+                </div>
+                <div id="active-pattern-text" class="rule-pattern-text"></div>
+                <button id="remove-rule-btn" class="btn btn-sm btn-outline-danger">Remove Rule</button>
+            </div>
+
+            <!-- Shown when NO rule is active for this site -->
+            <div id="create-rule-view" class="card" style="display: none;">
+                <div class="sub-info" style="margin-bottom: 8px;">No rule set (Default prompt)</div>
+                <div class="rule-form-row">
+                    <select id="rule-action" class="form-control form-control-sm">
+                        <option value="aria2">Aria2</option>
+                        <option value="firefox">Firefox</option>
+                    </select>
+                    <select id="rule-duration" class="form-control form-control-sm">
+                        <option value="permanent">Permanent</option>
+                        <option value="15">15 Minutes</option>
+                        <option value="60">1 Hour</option>
+                        <option value="session">This Session</option>
+                    </select>
+                </div>
+                <button id="add-rule-btn" class="btn btn-sm btn-primary" style="margin-top: 8px; width: 100%;">
+                    Remember for this site
+                </button>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <button id="footer-options-btn" class="link-btn">Manage all rules &amp; profiles &rarr;</button>
+        </footer>
+    </div>
+
+    <script type="module" src="popup.js"></script>
+</body>
+</html>
