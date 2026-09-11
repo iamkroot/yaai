@@ -8,11 +8,9 @@ Currently, this is a very barebones extension only intended for my personal use.
 Here are the steps to manually install YAAI:
 1. Switch to Firefox Developer Edition (to allow installing unsigned extensions).
 2. Open `about:config` and toggle `xpinstall.signatures.required` to `false` and `dom.dialog_element.enabled` to `true`.
-3. Run `npm install` after cloning this repo.
-4. Run `npm run build:prod`. This will invoke Webpack to bundle up all the JS deps for files from [`src/`](src).
-5. Open the [`addon`](addon) directory and zip up all the contents. Ensure the archive does *not* have a `addon` folder, otherwise firefox will reject it. The `manifest.json` should be directly present in the archive root.
-6. Open `about:addons` and drag-and-drop the zip to this page.
-7. After installation, open the extension preferences and add your [`RPC Token`](https://aria2.github.io/manual/en/html/aria2c.html#rpc-authorization-secret-token) for Aria2 there.
+3. Run `npm run pack` (or zip the contents inside [`addon`](addon) directory directly).
+4. Open `about:addons` and drag-and-drop the zip to this page (or in `about:debugging`, click "Load Temporary Add-on" and select `addon/manifest.json`).
+5. After installation, open the extension preferences and add your [`RPC Token`](https://aria2.github.io/manual/en/html/aria2c.html#rpc-authorization-secret-token) for Aria2 there.
 
 ## Acknowledgements
 YAAI is mostly a rewrite of the download interception logic from [Aria2-Integration](https://github.com/RossWang/Aria2-Integration/) in ES7. I've found it to be the best in terms of actually intercepting valid downloads and forwarding them to Aria2.

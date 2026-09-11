@@ -1,18 +1,10 @@
 {
   "name": "yaai",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Use Aria2 for downloading content in Firefox",
-  "dependencies": {
-    "aria2": "^5.0.0",
-    "sanitize-filename": "^1.6.4"
-  },
-  "devDependencies": {
-    "webpack": "^5.110.3",
-    "webpack-cli": "^7.2.3"
-  },
+  "type": "module",
   "scripts": {
-    "build": "webpack --mode=development --watch",
-    "build:prod": "webpack --mode=production"
+    "pack": "cd addon && zip -FSr ../addon.zip . -x '*.xpi' -x '*.zip'"
   },
   "author": "iamkroot",
   "license": "MIT"
