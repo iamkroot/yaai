@@ -2,7 +2,8 @@ import {
     getFilename,
     getHeaderVal,
     readProfilesConfig,
-    getActiveProfile
+    getActiveProfile,
+    addRecentDir
 } from "../common/utils.js";
 import { Aria2 } from "../common/aria2.js";
 
@@ -94,6 +95,13 @@ const addToAria = async (params) => {
     }
 
     await client.call("addUri", [url], args);
+
+    if (params.dir && typeof params.dir === "string" && params.dir.trim()) {
+        addRecentDir(targetProfile.id, params.dir).catch(err => {
+            console.warn("YAAI: Failed to add recent dir:", err);
+        });
+    }
+
     return true;
 };
 
@@ -143,7 +151,8 @@ const startDownload = async (respDetails, reqDetails) => {
     const profileList = currentConfig.profiles.map(p => ({
         id: p.id,
         name: p.name,
-        dir: p.dir || serverDefaultDirs.get(p.id) || ""
+        dir: p.dir || serverDefaultDirs.get(p.id) || "",
+        recentDirs: Array.isArray(p.recentDirs) ? p.recentDirs : []
     }));
 
     const params = {

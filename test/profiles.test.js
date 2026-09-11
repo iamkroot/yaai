@@ -7,7 +7,10 @@ import {
     readProfilesConfig,
     saveProfilesConfig,
     getActiveProfile,
-    readAria2Options
+    readAria2Options,
+    addRecentDir,
+    clearRecentDirs,
+    MAX_RECENT_DIRS
 } from "../addon/common/utils.js";
 
 // Mock browser.storage.local
@@ -163,5 +166,92 @@ describe("Profiles Data Model & Storage", () => {
 
         const fallback2 = getActiveProfile(null, "default");
         assert.equal(fallback2.id, "default");
+    });
+
+    it("addRecentDir adds directories in MRU order, deduplicates, and caps at MAX_RECENT_DIRS", async () => {
+        mockStorage = {
+            profiles: [
+                { ...DEFAULT_PROFILE, id: "default", name: "Default", recentDirs: [] }
+            ],
+            active_profile_id: "default"
+        };
+
+        await addRecentDir("default", "/downloads/movies");
+        await addRecentDir("default", "/downloads/music");
+        await addRecentDir("default", "/downloads/books");
+
+        let config = await readProfilesConfig();
+        assert.deepEqual(config.profiles[0].recentDirs, [
+            "/downloads/books",
+            "/downloads/music",
+            "/downloads/movies"
+        ]);
+
+        // Re-adding existing dir moves it to front without duplicating
+        await addRecentDir("default", "/downloads/movies");
+        config = await readProfilesConfig();
+        assert.deepEqual(config.profiles[0].recentDirs, [
+            "/downloads/movies",
+            "/downloads/books",
+            "/downloads/music"
+        ]);
+
+        // Adding more items caps at MAX_RECENT_DIRS (5)
+        await addRecentDir("default", "/dir4");
+        await addRecentDir("default", "/dir5");
+        await addRecentDir("default", "/dir6");
+        config = await readProfilesConfig();
+        assert.equal(config.profiles[0].recentDirs.length, MAX_RECENT_DIRS);
+        assert.equal(config.profiles[0].recentDirs[0], "/dir6");
+        assert.equal(config.profiles[0].recentDirs.includes("/downloads/music"), false);
+    });
+
+    it("addRecentDir ignores empty or whitespace strings", async () => {
+        mockStorage = {
+            profiles: [
+                { ...DEFAULT_PROFILE, id: "default", name: "Default", recentDirs: ["/dir1"] }
+            ],
+            active_profile_id: "default"
+        };
+
+        await addRecentDir("default", "");
+        await addRecentDir("default", "   ");
+        await addRecentDir("default", null);
+
+        const config = await readProfilesConfig();
+        assert.deepEqual(config.profiles[0].recentDirs, ["/dir1"]);
+    });
+
+    it("maintains recent directories separately per profile", async () => {
+        mockStorage = {
+            profiles: [
+                { ...DEFAULT_PROFILE, id: "local", name: "Local", recentDirs: [] },
+                { ...DEFAULT_PROFILE, id: "nas", name: "NAS", recentDirs: [] }
+            ],
+            active_profile_id: "local"
+        };
+
+        await addRecentDir("local", "/home/user/Downloads");
+        await addRecentDir("nas", "/volume1/downloads");
+
+        const config = await readProfilesConfig();
+        const local = config.profiles.find(p => p.id === "local");
+        const nas = config.profiles.find(p => p.id === "nas");
+
+        assert.deepEqual(local.recentDirs, ["/home/user/Downloads"]);
+        assert.deepEqual(nas.recentDirs, ["/volume1/downloads"]);
+    });
+
+    it("clearRecentDirs resets history for a profile", async () => {
+        mockStorage = {
+            profiles: [
+                { ...DEFAULT_PROFILE, id: "default", name: "Default", recentDirs: ["/dir1", "/dir2"] }
+            ],
+            active_profile_id: "default"
+        };
+
+        await clearRecentDirs("default");
+        const config = await readProfilesConfig();
+        assert.deepEqual(config.profiles[0].recentDirs, []);
     });
 });

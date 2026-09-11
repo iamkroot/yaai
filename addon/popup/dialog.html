@@ -8,8 +8,14 @@
             <input class="pure-input-1" type="text" name="yaai-filename" id="yaai-filename">
             <label for="yaai-profile">Server Profile</label>
             <select class="pure-input-1" name="yaai-profile" id="yaai-profile"></select>
-            <label for="yaai-dir">Location</label>
-            <input class="pure-input-1" type="text" name="yaai-dir" id="yaai-dir">
+            <label for="yaai-dir-select">Location</label>
+            <div id="yaai-dir-container" style="margin-bottom: 0.5em;">
+                <select class="pure-input-1" id="yaai-dir-select" name="yaai-dir-select"></select>
+                <div id="yaai-dir-input-wrapper" style="display: none; position: relative;">
+                    <input class="pure-input-1" type="text" name="yaai-dir" id="yaai-dir" placeholder="Enter download directory" style="padding-right: 28px; width: 100%; box-sizing: border-box;">
+                    <button type="button" id="yaai-dir-cancel-btn" title="Back to list" style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; font-size: 14px; line-height: 1; color: #888; padding: 4px;">✕</button>
+                </div>
+            </div>
         </fieldset>
         <button type="submit" value="aria2" class="pure-button pure-button-primary">Aria2</button>
         <button type="submit" value="firefox" class="pure-button">Firefox</button>

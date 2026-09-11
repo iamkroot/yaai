@@ -49,6 +49,8 @@ export const getHeaderVal = (headers, name) => {
     return header ? header.value || header.binaryValue || '' : '';
 };
 
+export const MAX_RECENT_DIRS = 5;
+
 export const DEFAULT_PROFILE = {
     id: "default",
     name: "Default",
@@ -58,7 +60,8 @@ export const DEFAULT_PROFILE = {
     secure: false,
     path: "/jsonrpc",
     secret: "",
-    dir: ""
+    dir: "",
+    recentDirs: []
 };
 
 export const DEFAULT_CONFIG = {
@@ -74,6 +77,11 @@ export async function readProfilesConfig() {
     const data = await browser.storage.local.get(["profiles", "active_profile_id", "aria2_options"]);
 
     if (Array.isArray(data.profiles) && data.profiles.length > 0) {
+        for (const profile of data.profiles) {
+            if (!Array.isArray(profile.recentDirs)) {
+                profile.recentDirs = [];
+            }
+        }
         const activeProfileId = data.profiles.some(p => p.id === data.active_profile_id)
             ? data.active_profile_id
             : data.profiles[0].id;
@@ -85,7 +93,8 @@ export async function readProfilesConfig() {
             ...DEFAULT_PROFILE,
             ...data.aria2_options,
             id: "default",
-            name: "Default"
+            name: "Default",
+            recentDirs: []
         };
         const config = { profiles: [migratedProfile], activeProfileId: "default" };
         await saveProfilesConfig(config);
@@ -105,6 +114,32 @@ export async function saveProfilesConfig(config) {
 export function getActiveProfile(profiles, activeProfileId) {
     if (!profiles || profiles.length === 0) return { ...DEFAULT_PROFILE };
     return profiles.find(p => p.id === activeProfileId) || profiles[0];
+}
+
+export async function addRecentDir(profileId, dir) {
+    if (!dir || typeof dir !== "string") return [];
+    const trimmed = dir.trim();
+    if (!trimmed) return [];
+
+    const config = await readProfilesConfig();
+    const profile = config.profiles.find(p => p.id === profileId);
+    if (!profile) return [];
+
+    const existing = Array.isArray(profile.recentDirs) ? profile.recentDirs : [];
+    profile.recentDirs = [trimmed, ...existing.filter(d => d !== trimmed)].slice(0, MAX_RECENT_DIRS);
+
+    await saveProfilesConfig(config);
+    return profile.recentDirs;
+}
+
+export async function clearRecentDirs(profileId) {
+    const config = await readProfilesConfig();
+    const profile = config.profiles.find(p => p.id === profileId);
+    if (!profile) return [];
+
+    profile.recentDirs = [];
+    await saveProfilesConfig(config);
+    return profile.recentDirs;
 }
 
 export const DEFAULT_ARIA2_OPTIONS = DEFAULT_PROFILE;

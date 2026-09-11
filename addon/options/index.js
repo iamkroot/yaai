@@ -2,7 +2,8 @@ import {
     readProfilesConfig,
     saveProfilesConfig,
     generateProfileId,
-    DEFAULT_PROFILE
+    DEFAULT_PROFILE,
+    clearRecentDirs
 } from "../common/utils.js";
 import { Aria2 } from "../common/aria2.js";
 
@@ -14,6 +15,8 @@ const deleteProfileBtn = document.getElementById("delete-profile-btn");
 const profileBadge = document.getElementById("profile-badge");
 const testConnectionBtn = document.getElementById("test-connection-btn");
 const statusMessage = document.getElementById("status-message");
+const recentDirsContainer = document.getElementById("recent-dirs-container");
+const clearHistoryBtn = document.getElementById("clear-history-btn");
 
 let config = { profiles: [], activeProfileId: "default" };
 let currentEditingProfileId = "default";
@@ -74,6 +77,16 @@ const populateForm = (profile) => {
             element.value = value ?? "";
         }
     }
+
+    if (recentDirsContainer && clearHistoryBtn) {
+        if (Array.isArray(profile.recentDirs) && profile.recentDirs.length > 0) {
+            recentDirsContainer.innerHTML = profile.recentDirs.map(d => `<div style="padding: 2px 0;">• ${d}</div>`).join("");
+            clearHistoryBtn.disabled = false;
+        } else {
+            recentDirsContainer.textContent = "(None)";
+            clearHistoryBtn.disabled = true;
+        }
+    }
 };
 
 const loadOptions = async () => {
@@ -105,7 +118,8 @@ const handleNewProfile = async () => {
     const newProfile = {
         ...DEFAULT_PROFILE,
         id: newId,
-        name: `Profile ${count}`
+        name: `Profile ${count}`,
+        recentDirs: []
     };
 
     config.profiles.push(newProfile);
@@ -176,6 +190,15 @@ const handleSaveProfile = async (event) => {
     showMessage("Profile saved successfully!", "success");
 };
 
+const handleClearHistory = async () => {
+    const profile = config.profiles.find(p => p.id === currentEditingProfileId);
+    if (!profile) return;
+    await clearRecentDirs(currentEditingProfileId);
+    profile.recentDirs = [];
+    populateForm(profile);
+    showMessage("Recent directories cleared for this profile.", "info");
+};
+
 const handleTestConnection = async () => {
     const formData = new FormData(form);
     const testOptions = {
@@ -207,3 +230,4 @@ makeDefaultBtn.addEventListener("click", handleMakeDefault);
 deleteProfileBtn.addEventListener("click", handleDeleteProfile);
 form.addEventListener("submit", handleSaveProfile);
 testConnectionBtn.addEventListener("click", handleTestConnection);
+clearHistoryBtn.addEventListener("click", handleClearHistory);

@@ -64,6 +64,13 @@
             <label for="dir">Default Directory</label>
             <input type="text" class="option aria2" name="dir" id="dir" placeholder="Server default (leave blank for Aria2 global dir)">
         </div>
+        <div class="panel-formElements-item">
+            <label>Recent Directories</label>
+            <div style="flex: 1 1 auto;">
+                <div id="recent-dirs-container" style="font-size: 0.9em; color: #555; margin-bottom: 6px; word-break: break-all;">(None)</div>
+                <button type="button" id="clear-history-btn" class="browser-style" style="font-size: 0.85em;">Clear History</button>
+            </div>
+        </div>
 
         <div class="panel-formElements-item" style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px;">
             <button type="button" id="test-connection-btn" class="browser-style">Test Connection</button>
