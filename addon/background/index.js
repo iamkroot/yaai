@@ -136,7 +136,12 @@ const startDownload = async (respDetails, reqDetails) => {
     }
 
     try {
-        await browser.tabs.executeScript(respDetails.tabId, { file: SCRIPT_FILE });
+        const [alreadyInjected] = await browser.tabs.executeScript(respDetails.tabId, {
+            code: "Boolean(window.__yaai_popup_initialized);"
+        });
+        if (!alreadyInjected) {
+            await browser.tabs.executeScript(respDetails.tabId, { file: SCRIPT_FILE });
+        }
     } catch (e) {
         console.warn("YAAI: Failed to execute popup script into tab:", e);
         return false;
@@ -220,7 +225,7 @@ const startDownload = async (respDetails, reqDetails) => {
 const COMMON_TYPES = ["pdf", "xhtml", "x-xpinstall", "x-shockwave-flash", "rss", "json"];
 
 const shouldInterceptDownload = (details) => {
-    if (details.statusCode != 200) {
+    if (details.statusCode !== 200 && details.statusCode !== 206) {
         return false;
     }
 
