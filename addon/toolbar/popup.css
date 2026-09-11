@@ -6,6 +6,7 @@
 
 body {
     width: 320px;
+    max-width: 100vw;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-size: 13px;
     color: #202124;

@@ -5,7 +5,7 @@
     window.__yaai_popup_initialized = true;
 
     const DIALOG_HTML = `
-<dialog id="yaai-dialog" style="max-height: 50%; z-index: 2147483647; margin: auto; position: fixed;">
+<dialog id="yaai-dialog" style="max-width: 95vw; max-height: 85vh; overflow-y: auto; z-index: 2147483647; margin: auto; position: fixed; box-sizing: border-box;">
     <form method="dialog" class="pure-form pure-form-stacked">
         <fieldset>
             <legend>Intercepted download</legend>
