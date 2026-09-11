@@ -1,7 +1,7 @@
 {
     "manifest_version": 2,
     "name": "YAAI: Yet another Aria2 Integrator",
-    "version": "0.1.1",
+    "version": "0.3.0",
     "description": "Use Aria2 for downloading content in Firefox",
     "permissions": [
         "storage",
@@ -37,7 +37,10 @@
     "browser_specific_settings": {
         "gecko": {
             "id": "yaai@iamkroot",
-            "strict_min_version": "57.0"
+            "strict_min_version": "109.0",
+            "data_collection_permissions": {
+                "required": ["none"]
+            }
         }
     }
 }
